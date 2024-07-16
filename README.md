@@ -1,13 +1,31 @@
 Welcome to GCP PDE Notebook!!
 
 
-# Table of Contents
+# Table of Contents:
+---
 ## Cloud Basics
-- Cloud computing
-- Cloud-computing models
+
+- Offers pay-as-you-go pricing
+- Companies minimize up-front IT infrastructure costs
+- is the on-demand delivery of IT resources (compute/storage/etc)
+- Delivery by a cloud services platform via the internet
+
+![image](https://github.com/user-attachments/assets/48ac9f7a-8c96-4564-99e4-3e0c0d9dbc4a)
+
+# Cloud-computing models
+- Software as a Service (SaaS)
+- Infrastructure as a Service (IaaS)
+- Platform as a Service (PaaS)
+
+  
+![image](https://github.com/user-attachments/assets/5351a0fe-ad5a-4040-a486-da8de1fcfd94)
+
+----
+
 ## GCP Basics
 
-- GCP Services
+# GCP Services
+
 - Google Cloud Functions
 
 ## Storage Models
