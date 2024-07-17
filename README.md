@@ -4,7 +4,7 @@ Welcome to GCP PDE Notebook!!
 # Table of Contents:
 ---
 # 1. Cloud Basics
-
+### Cloud Computing
 - Offers pay-as-you-go pricing
 - Companies minimize up-front IT infrastructure costs
 - is the on-demand delivery of IT resources (compute/storage/etc)
@@ -12,7 +12,7 @@ Welcome to GCP PDE Notebook!!
 
 ![image](https://github.com/user-attachments/assets/48ac9f7a-8c96-4564-99e4-3e0c0d9dbc4a)
 
-# Cloud-computing models
+### Cloud-computing models
 - Software as a Service (SaaS)
 - Infrastructure as a Service (IaaS)
 - Platform as a Service (PaaS)
@@ -22,7 +22,7 @@ Welcome to GCP PDE Notebook!!
 
 ----
 
-## GCP Basics
+# 2. GCP Basics
 
 ## GCP Services
 
@@ -175,11 +175,11 @@ Consider a chat app with messages and chat groups to see how hierarchical data s
 
 You may save different chat rooms in a collection named rooms:
 
-collections_bookmark rooms
+	collections_bookmark rooms
 
-class roomAname : "my chat room"
+	class roomAname : "my chat room"
 
-class roomB...
+	class roomB...
 
 Decide how you’ll save your messages now that you’ve had chat rooms. It’s possible that you won’t want to save them in the chat room’s document. Firestore documents should be light, and a chat room might have a big amount of messages. However, as subcollections, you may construct more collections within your chat room’s document.
 
@@ -349,16 +349,153 @@ The key considerations in evaluation of GCP data storage options, are:
 - Big Data Architectures
 - Capacity Planning
 
+## Big Data Architectures
+A big data architecture is designed to handle
 
-## Data Migration
+- Ingestion
+- Processing
+- analysis
+of too large or complex data which RDBMS are not able to manage
 
-- Present Environment
-- Workload
-- Types of migrations
-- Google Cloud Adoption Framework
-- The migration Process
+ 
 
-## Data Quality Management
+Usually workloads involved are
+
+- Batch processing for big data sources at rest.
+- Real-time processing for big data in motion.
+- Interactive exploration of big data in motion or rest
+- Predictive analytics and machine learning of big data.
+ 
+
+Big data architectures is applied when
+
+- traditional database unable to store and process large volumes of data
+- To process and transform unstructured data for analysis and reporting.
+- For unbounded streams of data, acquire, process and analysis in real time or low latency.
+
+Components of a big data architecture
+
+- Data sources: It is the essential component and may include
+	- Application data stores or RDBMS
+	- Static files given by applications like logs
+	- Real-time data sources as from IoT devices.
+- Data storage. Distributed file store are used to for data storage to store huge volumes in various formats. .
+- Batch processing. It is applied as huge data volume for data processing jobs like filtering, aggregation, or  prepare for analysis. Steps involved are reading data, processing and writing to new files in a batch manner.
+- Real-time message ingestion. For real-time data sources and involves capture and storage of messages for real-time stream processing.
+	- A message ingestion store is used as a buffer and called as stream buffering.
+	- Stream processing. After capture, real-time processing done like filtering, aggregation, or data preparation for analysis.
+	- Output of processing foes to a output sink.
+- Analytical data store. Big data requires data preparation for analysis and provide data as per analysis tool requirement. The analytical data store provides the storage and replies to the queries.
+- Analysis and reporting. For providing insights by data analysis and reporting.
+- Repeated data processing tasks are orchestrated as workflows and automated from data capture, transform and analysis.
+
+## Capacity Planing
+Capacity is the amount of resources needed to run service or services for fulfilling the requirement.
+
+In computing it could be RAM capacity/ storage capacity or computing capability
+
+Capacity planning involves planning capacity to address future and present needs and it involves steps as
+
+Step 1 : Bottom-Up Capacity
+
+Analyze current system capacity
+
+Step 2 : Primary Drivers
+
+Figure out present resource usage and their utilization.
+
+Step 3 : Theoretical Minimum Capacity
+
+Deduce the minimum capacity needed in present setup  or  for tasks the system is accomplishing
+
+Step 4 : Past Predicts Future
+
+Use past capacity changes for requirement fulfilment
+
+Step 5 : Assumptions
+
+Focus on assumptions for future systems and their designs. Also, include risks to be taken in  terms of  assumptions made.
+
+Step 6 : Risks
+
+Mitigate or accept risks as part of the capacity planning. Mitigation is done  by addressing the risk and acceptance is resolved by making suitable provisions as applicable with aim of lowest cost for resolution. At least plan for long term for resources like 3/5 years.
+
+PLAN B
+
+Develop a backup plan
+
+# 3. Data Migration
+
+## Present Environment
+Present environment to be migrated, should be mapped first
+
+It can be
+
+- on-premises environment – Have full ownership, responsibility and control
+- Private hosting environment – Like colocation facility, involves only part of infrastructure and its management being outsourced to an third party. Shared amongst customers.
+- Public cloud environment – fully managed services
+
+Table comparing each environment
+
+	Resources			On-premises	Private hosting				Public cloud
+	Physical security and safety	You		Service provider		Service provider
+	Power and network cabling	You		Service provider		Service provider
+	Hardware (incl. maintenance)	You		Depends on service provider	Service provider
+	Virtualization platform	You	You		Service provider
+	App resources			You		You				You (eventually leveraging fully managed services)
+
+
+## Workload
+- Understanding workloads type is essential for migration and is next after understanding the environment.
+- Usually legacy workloads and operations might not be suitable for cloud environments.
+- Various combinations of environment and workload types to consider during migration are
+	- On-premises environment with legacy workloads and operations.
+	- On-premises environment with cloud-native workloads and operations.
+	- Public cloud environment with legacy workloads and operations.
+	- Public cloud with cloud-native workloads and operations.
+
+## Types of migrations
+There are three major types of migrations:
+
+Lift and shift:
+
+- Move workloads to a target environment with little or no modifications.
+- Minimum changes needed are applied to operate in target cloud environment.
+- Suitable if environment and workloads are similar or little or no business need for change.
+- It requires the least time and is the quickest migration
+Improve and move:
+
+- It involves changing the workloads or operation to benefit from cloud-native capability
+- Improvement in performance/ features/ cost/ user experience is realized
+- Suitable if a major update was to be done on the workload
+Rip and replace:
+
+- Complete redesign and development of existing workload or operation is done
+- Suitable if existing is not to be maintained or change in requirements or no support in GCP
+
+## Google Cloud Adoption Framework
+- To evaluate the organizational readiness for cloud technology adoption
+- It is a map for present and targeted IT capabilities
+- Identify gaps and fill them
+
+![image](https://github.com/user-attachments/assets/a075faac-6d65-4351-bac0-5f58756a52d3)
+
+Four themes are assessed:
+
+- The quality and scale of learning programs.
+- Support to IT departments from leadership for migration
+- Level of cloud-native services usage
+- Level of security of present environment
+
+For each theme, identify your phase as below
+
+- No plans only a quick ROI and least IT disruption is required.
+- A plan is present but only streamlining of operations are needed for more efficiency.
+- Focused on long term goals. Improve efficiency by cloud model
+
+## The migration Process
+
+# Data Quality Management
 
 - Validate Data
 - Quality metadata
