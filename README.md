@@ -1670,116 +1670,856 @@ Other settings –
 - Product catalogs for real-time inventory and product details for a retailer.
 - User profiles giving a customized experience based on the user’s past activities and preferences.
 - Transactions based on ACID properties, for example, transferring funds from one bank account to another.
-- Queries
-- Indexing
-- Data Consistency
+### Queries
+- A query retrieves entities that meet a specified set of conditions.
+- The query operates on entities of a given kind
+- Can specify filters on the entities’ property values, keys, and ancestors, and can return zero or more entities as results.
+- sort orders can also be specified to sequence the results by their property values.
+- query can return entire entities, projected entities, or just entity keys.
+- Every query computes its results using one or more indexes
+- When executed, the query retrieves all entities of the given kind satisfying given filters, sorted in specified order.
+- Queries execute as read-only.
+ 
 
-## Bigtable
-- Bigtable Overview
-- Cloud Bigtable architecture
-- Data Organization
-- Load balancing
-- Columns
-- Supported data types
-- Empty cells
-- Column qualifiers
-- Compactions
-- Mutations and deletions
-- Data compression
-- Data durability
-- Security
-- Instance Configuration
-- Storage types
-- Data Management
-- cbt tool
-- Best Practices
+A typical query includes the following:
 
-## Cloud Spanner
-- Cloud Spanner Overview
-- Schema and data model
-- Cloud Spanner Instances
+- An entity kind to which the query applies
+- Zero or more filters based on the entities’ property values, keys, and ancestors
+- Zero or more sort orders to sequence the results
+ 
+### Indexing
+An index is
 
-## Cloud Pub/Sub
-- Cloud Pub/Sub Overview
-- Monitoring
+- defined on a list of properties of a given entity kind,
+- a order (ascending or descending) for each property is also defined
+- Indexes – Created on every category which is not null
+- Secondary and composite indexes – done using multiple fields
+- by default, 1 index per column is created,
+- restrictions with combining multiple columns.
+- To use multiple columns as indexes, we need to create composite indexes.
+- Creating composite index:
+- Create index.yaml:
+- Create index:
+- gcloud datastore create-indexes index.yaml
+ 
 
-## Cloud Dataflow
+An index table
 
-- Cloud Dataflow Overview
-- Key Concepts
-- Pipeline Design
-- Pipeline Lifecycle, creation and Transform
-- Cloud Dataflow templates
-- Streaming Pipeline
-- Best Practices
+- contains a column for every property named in the index’s definition.
+- Each row represents an entity with a potential result for queries based on the index.
 
-## Dataproc
-- Dataproc Overview
-- Configure Dataproc Cluster and Submit Job
-- Migrating to Google Cloud
-- Best Practices
+### Data Consistency
+Selecting Specific Application
 
-## BigQuery
-- BigQuery Overview
-- Interacting with BigQuery
-- Loading Data
-- Exporting Data
-- Optimize for Performance and Cost
-- Queries
-- BigQuery Logging and Monitoring
-- BigQuery Best Practices
+- For a relational database with full SQL support for an online transaction processing (OLTP) system, consider Cloud SQL.
+- If data is not highly structured or no need for ACID transactions Cloud Bigtable is apt.
+- For interactive querying in an OLAP system, BigQuery is suitable.
+- For storing large immutable blobs, like large images or movies, Cloud Storage is suitable.
+- Strong consistency – entity groups (this will slow down writes to 1 per second), regular read and write
+- Eventual consistency – global entities, indexes
+  
+# 10. Bigtable
+A wide-column NoSQL database
+### Bigtable Overview
+- Cloud Bigtable is a sparsely populated table
+- Can scale to billions of rows and thousands of columns,
+- Can store terabytes or even petabytes of data.
+- A single value in each row is indexed called the row key.
+- Good to store very large amounts of single-keyed data with very low latency.
+- Supports high read and write throughput at low latency
+- Ideal data source for MapReduce
+- Supports client libraries, like  Apache HBase library for Java.
+- Has Incredible scalability
+- similar to hbase, cassandra, dynamodb.
+- indexed by row key, column key, and timestamp
+- Data can be streamed into bigtable
+- No joins, transactions supported only within a single row
+- Append only operation, no transactional.
+- Cluster resizing without downtime
+- Use cases
+	- non-structured key/value data, but each value is no larger than 10 MB.
+	- storage engine for batch MapReduce
+	- stream processing/analytics
+	- machine-learning applications
+- Store and query following data
+	- Time-series data
+	- Marketing data like purchase histories
+	- Financial data, like transaction histories
+	- Internet of Things data, like usage reports
+	- Graph data
+### Cloud Bigtable architecture
+- Data is stored as a sorted map structure.
+- Data is indexed at the column level as a group of
+	- row key
+	- a column key
+	- and a timestamp
+- The index is the key mapping to the column’s actual value.
+- Timestamp is for versioning.
+- Data operations are conducted on a per-row basis so, all columns of a row are updated simultaneously.
+- Automatic data compression is also done as applicable.
+- Bigtable cluster may only operate within a single zone.
+- For higher availability, configure with two separate clusters, each in a different zone of the same region.
 
-## Google Stackdriver
-- Monitoring
-- Logging
-- Error Reporting
-- Debugging
-- Tracing
+Cloud Bigtable Architecture:
 
-## Machine Learning
-- What is Machine Learning?
-- Inductive Learning
-- Machine Learning Algorithms
-- Neural Networks
+![image](https://github.com/user-attachments/assets/ece3ff1b-d81a-42dd-aa35-3b00a5ec3c21)
 
-## Google AI Platform (Formerly Cloud ML Engine)
-- AI Platform Overview
-- AI Platform Training
-- AI Platform Pipelines
 
-## Pre-trained Machine Learning API’s
-- Pre-trained ML API’s
-- Cloud Vision Product Search
-- Vision API
-- NL API
+- Client requests go through a front-end server
+- Nodes are organized into a Cloud Bigtable cluster of a Cloud Bigtable instance
+- Each node in the cluster handles a subset of the requests to the cluster.
+- Add nodes to increase the number of simultaneous requests to handle and maximum throughput
+- Table is sharded into blocks of contiguous rows, called tablets similar to HBase regions. Tablets are stored on Colossus, Google’s file system, in SSTable format.
+- An SSTable is a ordered immutable map from keys to values, and both are byte strings.
+- Tablet is associated with a specific node.
+- Writes are stored in Colossus’s shared log as acknowledged
+- Data is never stored in nodes themselves;
+- Node have pointers to a set of tablets stored on Colossus.
+- Rebalancing tablets from one node to another is very fast
+- Recovery from the failure of a node is very fast
+- When a Cloud Bigtable node fails, no data is lost.
+  
+### Data Organization
+- Every row in Bigtable is indexed by a single row key.
+- Row keys are byte strings that may be up to 64 KB
+- Row keys enables to retrieve several related rows quickly as a single, contiguous scan over the row key.
+- Each row may contain thousands of columns
+- Bigtable only scans the row key when performing lookups.
+- Reads and writes are performed at the row level.
+- Data is stored in scalable tables, each of which is a sorted key/value map.
+- Each row describes a single entity,
+- Columns contain individual values for each row.
+- Each row is indexed by a single row key
+- Columns if related are grouped into a column family.
+- Column is identified by column family and a column qualifier.
+- Each row/column intersection can contain multiple cells, or versions, at different timestamps
+- Tables are sparse; if a cell does not contain any data, it does not take up any space.
+For example, suppose you’re building a social network for United States presidents—let’s call it Prezzy. Each president can follow posts from other presidents. The following illustration shows a Cloud Bigtable table that tracks who each president is following on Prezzy:
 
-## Datalab
-- Datalab Overview
-- Running Datalab
+![image](https://github.com/user-attachments/assets/2ffc06b6-149f-446e-9971-e660b4e429d4)
 
-## Dataprep
-- Dataprep Overview
+In above figure,
 
-## DataStudio
-- DataStudio Basics
-- Steps to use the tool
+- The table has single column family – “follows” having many column qualifiers.
+- Above, uses column qualifiers as data as Bigtable handles sparseness and will be able to add new ones quickly.
+- Row key is username and assuming they are evenly spread, it gives quick access and update
+### Load balancing
+- Cloud Bigtable zone is managed by a master process
+- The process balances workload and data volume within clusters.
+- The master
+	- splits busier/larger tablets in half
+	- merges less-accessed/smaller tablets together and redistributes between nodes
+	- In spike of traffic, master splits tablet in two and moves new tablets to another node.
+- For write performance distribute writes as evenly as possible across nodes.
+- Useful to group related rows for efficient read of several rows at same time.
+  
+### Columns
+- They are stored as unstructured byte arrays
+- For performance, column values be under 10 MB, with a combined size of 100 MB for all columns in a row.
+- Best to keep all data about a entity in a single, flattened, potentially very wide row.
+- Column families are defined at the table level and subsets of columns can be read.
+- Best to group columns into families based on access patterns
+  
+### Supported data types
+- It treats all data as raw byte strings
+  
+ ### Empty cells
+ - Empty cells do not take any space
+- the key/value entry is simply absent.
+### Column qualifiers
+- They take up space in a row
+- It is efficient to use column qualifiers as data.
+### Compactions
+- Compaction or removal of deleted entries takes place automatically.
+  
+### Mutations and deletions
+- Mutations, or changes, to a row take up extra storage space a it is done sequentially and - compaction is done only periodically.
+- During compaction, values no longer needed are removed.
+- During update in a cell, both the original and new value are stored till compacted.
+- Deletions also take up extra storage space, until compaction
+### Data compression
+- Automatic compaction
+- Cannot configure compression settings for table.
+- Random data cannot be compressed
+### Data durability
+- Data is stored on Colossus, Google’s internal, highly durable file system
+- HDFS cluster is not needed
+- If using replication, one copy of data is in Colossus for each cluster in the instance.
+- Each copy is located in a different zone or region
+- Google uses proprietary storage methods to achieve data durability
+### Security
+- Access controlled by Google Cloud project and the Cloud IAM roles
+- can manage security at the project, instance, and table levels.
+- No support for row-level, column-level, or cell-level security restrictions.
+### Instance Configuration
+- Instance is a container for data.
+- Instances have one or more clusters
+- located in different zones.
+- Each cluster has at least 1 node.
+- An instance has properties –
+	- The storage type (SSD or HDD)
+	- The application profiles, which use replication
+### Storage types
+- Two types – solid-state drives (SSD) or hard disk drives (HDD).
+- SSD storage is the most efficient and cost-effective choice for most use cases.
+- HDD storage is sometimes appropriate for very large data sets (>10 TB) that are not latency-sensitive or are infrequently accessed.
+- HDD use cases
+- store at least 10 TB of data.
+- not to be used for user-facing or latency-sensitive application.
+- workload is Batch workloads or Data archival
 
-## Cloud Composer
-- Cloud Composer Overview
+###### Application profiles
+- 
+- Application profiles, or app profiles for instances using replication,
+- app profiles control how applications connect to the instance’s clusters.
+- Without replication, app profiles provide separate identifiers for each of applications
+###### Clusters
 
-## Security and Compliance
-- Google Security Culture
-- Operational Security
-- Technology with Security at Its Core
-- Independent Third-Party Certifications
-- Regulatory compliance
-- General Data Protection Regulation (GDPR)
-- The Health Insurance Portability and Accountability Act of 1996 (HIPAA)
-- Cloud Data Loss Prevention (DLP)
-- Encryption Basics
-- Cloud Key Management Service
+- A cluster is a service in a specific location.
+- Cluster belongs to a single instance
+- An instance can have up to 4 clusters
+- application requests are handled by one of the clusters in the instance.
+- cluster is located in a single zone.
+- An instance’s clusters must each be in unique zones.
+- can create more cluster in any zone if Bigtable is available.
+- instances with only 1 cluster do not use replication.
+ 
 
-## Cloud IAM
-- Access management
-- Cloud IAM policy
-- Cloud IAM working
+###### Nodes
+
+- Each cluster in an instance has 1 or more nodes
+- Nodes are compute resources to manage data.
+- Bigtable splits all data from tables into smaller tablets.
+- Tablets are stored on disk, separate from the nodes but in the same zone as the nodes.
+- A tablet is associated with a single node.
+- Each node
+	- Keep track of specific tablets on disk.
+	- Handle incoming reads and writes for its tablets.
+	- Perform maintenance tasks on its tablets
+
+Instance Creation Steps
+- 
+- Select or create a GCP project.
+	- A project name must be between 4 and 30 characters.
+	- A project ID is suggested which can be edited and is 6 to 30 characters, with a lowercase letter as the first character and last character cannot be a hyphen.
+- Make sure billing is enabled for Google Cloud project.
+- Enable the Cloud Bigtable and Cloud Bigtable Admin APIs.
+
+Labels –
+
+- a key-value pair
+- helps you organize GCP resources
+- Can attach a label to each resource
+- filter the resources based on their labels.
+
+###### Modifying Instance
+
+- By default, can provision maximum thirty Cloud Bigtable nodes/zone in each Google Cloud project.
+- For more use the node request form.
+- After creating a Bigtable instance, can update following settings
+	- number of nodes in each cluster
+	- number of clusters in the instance
+	- application profiles for the instance
+	- labels for the instance
+	- display name for the instance
+###### Adding and deleting clusters
+
+- can add clusters to an existing instance,
+- a maximum of 4 clusters per instance can be present
+- Clusters can be in any region if Bigtable is available
+ 
+
+###### Deleting a cluster
+
+- Can delete all but 1 of the clusters is needed
+- Deleting all but 1 cluster automatically disables replication.
+ 
+
+###### Monitoring
+
+- monitor Bigtable instance using Cloud Console and Cloud Monitoring
+- A high-level overview is given
+- Key Visualizer tool gives drill down
+### Data Management
+- Bigtable supports a number of methods for interacting with data, as
+	- HTTP API
+	- the gRPC API
+	- the cbt command-line tool
+	- client libraries
+	- an HBase client (Google HBase Java client library or the HBase shell)
+
+Dataflow templates export data from Bigtable as
+- 
+- Avro files
+- Parquet files
+- SequenceFiles
+
+###### Migrating the data from an Apache HBase cluster to a Cloud Bigtable cluster –
+
+- Export the data as a series of Hadoop sequence files.
+- Collect details from HBase.
+- Export HBase tables to sequence files.
+- Move the sequence files to Cloud Storage.
+- Import the sequence files into Bigtable using Dataflow.
+- Validate the move.
+### cbt tool
+
+In this, we will learn about the cbt tool of Google Professional Data Engineer GCP.
+
+- A command-line interface
+- perform operations on Bigtable.
+- written in Go
+- install the cbt tool as a Cloud SDK component or by using the standard go tool.
+Usage:
+
+		 cbt [-<option> <option-argument>] <command> <required-argument> [optional-argument]
+
+The commands are:
+
+		count – Count rows in a table
+		createinstanceCreate an instance with an initial cluster
+		createcluster – Create a cluster in the configured instance
+		createfamily – Create a column family
+		createtable – Create a table
+		updatecluster – Update a cluster in the configured instance
+		deleteinstanceDelete an instance
+		deletecluster – Delete a cluster from the configured instance
+		deletecolumn – Delete all cells in a column
+		deletefamily – Delete a column family
+		deleterow – Delete a row
+		deleteallrows – Delete all rows
+		deletetable – Delete a table
+		doc – Print godoc-suitable documentation for cbt
+		help – Print help text
+		listinstances – List instances in a project
+		listclusters – List clusters in an instance
+		lookup -Read from a single row
+		ls -List tables and column families
+		mddoc – Print documentation for cbt in Markdown format
+		read – Read rows
+		set – Set value of a cell (write)
+		setgcpolicy – Set the garbage-collection policy (age, versions) for a column family
+		waitforreplicationBlock until all the completed writes have been replicated to all the clusters
+		version – Print the current cbt version
+		createappprofile Create app profile for an instance
+		getappprofile – Read app profile for an instance
+		listappprofileLists app profile for an instance
+		updateappprofile Update app profile for an instance
+		deleteappprofile Delete app profile for an instance
+ 
+
+The options are:
+
+-project string : project ID. If unset uses gcloud configured project
+-instance string :Cloud Bigtable instance
+-creds string: Path to the credentials file. If set, uses the application credentials in this file
+### Best Practices
+- Use Wide tables for dense data.
+- Use Narrow tables for sparse data.
+- Dont put sequential ids as key. Salting of ids can be used.
+- Change schema to minimize data skew
+- choose the right number of nodes
+- use SSD
+- Use key visualizer gives bigtable usage performance
+- Row key needs to be chosen carefully so that contiguous rows are returned for queries. Row keys should also prevent hotspotting while writing.
+- Spread load across multiple nodes(prevent hotspotting)
+
+# 11. Cloud Spanner
+A globally consistent, horizontally scalable database with full ACID compliance.
+
+### Cloud Spanner Overview
+- A fully managed service
+- relational database service
+- offers transactional consistency at global scale
+- automatic synchronous replication for high availability
+- Has interleaved schema – Group primary key and foreign keys together for faster access
+- Cascade on delete can be done with interleave.
+- Primary keys don’t have sequential keys and make sure its distributed
+- Secondary indexes make the query efficient
+ 
+
+CAP Theorem
+
+The CAP theorem is for distributed system and they can guarantee at most two qualities only:
+
+- Consistency: All observers see the most recent data and order of events is guaranteed
+- Availability: The system is always online and able to handle all requests
+- Partition tolerance: The system continues to operate during network disruptions
+ 
+
+- RDBMS can best provide CP
+- NoSQL can provide AP
+- Spanner provides all three – CAP.
+ 
+
+Comparison with other data models
+
+				Cloud_Spanner	Traditional Relational	Traditional Non-Relational
+Schema			Yes				Yes						No
+SQL				Yes				Yes						No
+Consistency		Strong			Strong					Eventual
+Availability	High			Failover				High
+Scalability		Horizontal		Vertical				Horizontal
+Replication		Automatic		Configurable				Configurable
+ 
+
+ 
+
+TrueTime
+
+- Used For strong consistency
+- Google datacenters have atomic clocks
+- It gives Spanner nodes to determine the current time down to a very fine resolution. the margin of error in system time is about 7 ms.
+ 
+
+Paxos consensus algorithm
+
+- Allows consensus to be reached in very unreliable environments
+- ideal for maintaining consensus across large bodies of data.
+ 
+
+Read / Write
+
+- queries are performed using strong reads that guarantee the most recent results
+- queries may result in a slight performance hit.
+- Clients can specify an exact staleness in queries
+- the client provides a timestamp and Spanner executes the query on the most recent data relative to that timestamp.
+- Spanner APIs provide write operation
+- For write give a number of mutations to be executed,
+- each mutation affects a single cell
+- Spanner supports up to 20,000 mutations in a single transaction, and affected indexes are also counted.
+- Cloud Spanner offers two types of transaction
+- read-only transactions – non-locking operations and it ensures that the data being read is not updated from the observer’s point of view over the course of one or many reads. Any update during a read-only transaction are ignored
+- read-write transactions – locking operations so, data will be blocked until the transaction is committed. It supports rollbacks.
+
+### Schema and data model
+- Can contain one or more tables
+- Tables look like relational database tables
+- Table structured with rows, columns, and values
+- table have primary keys.
+- Data is strongly typed
+- must define a schema for each database and specify the data types of each column.
+- Allowable data types include scalar and array types
+- Avoid hot spotting like bigtable
+- Use nested tables with primary keys called interleaving for faster access.
+- Do not use sequential numbers, timestamps.
+- If needed, store timestamps in descending order.
+ 
+
+###### Parent-child table relationships
+
+- Two ways to define parent-child relationships – table interleaving and foreign keys.
+- Table interleaving is good if child table’s primary key includes the parent table’s primary key columns.
+- Foreign keys
+	- are not limited to primary key columns
+	- tables can have multiple foreign key relationships
+ 
+
+###### Primary keys
+
+- Every table must have a primary key
+- primary key can be composed of zero or more columns of that table.
+- For child, the primary key column(s) of the parent table must be the prefix of the primary key of the child table.
+- Spanner stores rows in sorted order by primary key values
+- child rows also inserted between parent rows that share the same primary key prefix.
+- Spanner can physically co-locate rows of related tables.
+
+###### Choosing a primary key
+
+- primary key uniquely identifies each row in a table.
+- Options for primary key
+	- Hash the key and store it in a column.
+	- Use a Universally Unique Identifier (UUID).
+	- Bit-reverse sequential values.
+ 
+
+###### Database splits
+
+- can define hierarchies of parent-child relationships between tables up to seven layers deep
+- Spanner divides data into chunks called “splits”
+- individual splits can move independently from each other and assigned to different servers
+- A split is a range of rows in a top-level (in other words, non-interleaved) table, where the rows are ordered by primary key.
+- The start and end keys of this range are called “split boundaries”.
+- Spanner automatically adds and removes split boundaries
+ 
+
+###### Key columns
+
+- The keys of a table can’t change
+- can’t add a key column to an existing table
+- cannot remove a key column from an existing table.
+ 
+
+###### Storing NULLs
+
+- Primary key columns can be defined to store NULLs.
+- to store NULLs in a primary key column, omit the NOT NULL clause
+ 
+
+###### Disallowed types
+
+These cannot be of type ARRAY:
+
+- A table’s key columns.
+- An index’s key columns.
+###### Replication
+
+- Spanner automatically gets replication at the byte level
+- Spanner writes database mutations to files in this filesystem
+- Spanner creates replicas of each database split
+- 3 types of replicas: read-write replicas, read-only replicas, and witness replicas.
+- Single-region instances use only read-write replicas,
+- multi-region instance configurations use a combination of all three types
+For multi-region
+
+		Replica type	Can vote	Can become leader	Can serve reads
+		Read-write		yes			yes					yes
+		Read-only		no			no					yes
+		Witness			yes			no					no
+ 
+
+
+ 
+
+###### Schema Design Best Practices
+- Design a schema that prevents hotspots and other performance issues.
+- Place compute resources for write-heavy workloads within or close to the default leader region for optimal write latency
+- Use staleness of at least 15 seconds for optimal read performance outside of the default leader region
+- place critical compute resources in at least two regions to avoid single-region dependency
+- keep high priority total CPU utilization under 45% in each region.
+  
+### Cloud Spanner Instances
+- To use Cloud Spanner, first create a Cloud Spanner instance within Google Cloud project.
+- instance allocates resources used by Cloud Spanner
+- Instance creation includes instance configuration and the node count
+- An instance configuration defines the geographic placement and replication of the databases in that instance.
+- node count is the number of nodes to allocate to that instance.
+- Each node provides up to 2 TB of storage.
+- After instance creation, can add or remove nodes to the instance later.
+- cannot remove nodes if
+- If store more than 2 TB of data per node.
+- Spanner has created a large number of splits for instance’s data
+- To change nodes, use
+	- Cloud Consol
+	- the gcloud command-line tool
+	- the client libraries
+###### Nodes versus replicas
+
+- To scale up the serving and storage resources in instance, add more nodes to that instance.
+- Adding a node does not increase the number of replicas but increases the resources
+- total number of servers in a Cloud Spanner instance is the number of nodes the instance has multiplied by the number of replicas in the instance.
+###### Data Management
+
+- To create, alter, and delete tables and indexes is done by using the default Database editor
+- Use Cloud Console for inserting, editing, and deleting data.
+- run DML statements using client libraries, the Google Cloud Console, and the gcloud command-line tool.
+- execute DML statements inside read-write transactions.
+- During data read, shared read locks is acquired on limited portions of the row ranges to read.
+- During write using DML statements, exclusive locks is acquired
+- Cloud Spanner sequentially executes all the SQL statements (SELECT, INSERT, UPDATE, and DELETE) within a transaction and not concurrently except multiple SELECT statements
+- transaction with DML statements has the same limits as any other transaction.
+- Use Partitioned DML for large-scale changes
+- If transaction result in more than 20,000 mutations, a BadUsage error is given
+- If a transaction result larger than 100 MB, a BadUsage error is given
+- Partitioned DML is designed for bulk updates and deletes, particularly periodic cleanup and backfilling.
+###### Query
+
+- DQL statements is used to query
+- A query execution plan is the set of steps for how the results are obtained.
+- can retrieve a query plan using the Cloud Console, the client libraries, and the gcloud command-line tool.
+
+###### Query Best Practices
+
+- Use query parameters to speed up frequently executed queries
+- Use secondary indexes to speed up common queries
+- Avoid large reads inside read-write transactions
+- Use ORDER BY to ensure the ordering of SQL results
+- Use STARTS_WITH instead of LIKE to speed up parameterized SQL queries
+
+# 12. Cloud Pub/Sub
+ centralized storage and compute clusters.
+- Centralized ownership
+- Scalability bottlenecks
+- Controlling network experience
+- Business integration hiccups
+- Streaming Data is Very Complex – continuously generate by an array of sources and devices in a wide variety of formats.
+
+### Cloud Pub/Sub Overview
+- use Pub/Sub as messaging-oriented middleware
+- use as event ingestion and delivery for streaming analytics pipelines.
+- offers durable message storage and real-time message delivery
+- gives high availability and consistent performance at scale.
+- It is a publish/subscribe (Pub/Sub) service
+- senders of messages are decoupled from the receivers of messages
+- Main terms
+- Message: the data that moves through the service.
+- Topic: a named entity that represents a feed of messages.
+- Subscription: a named entity that represents an interest in receiving messages on a particular topic.
+- Publisher (also called a producer): creates messages and sends (publishes) them to the messaging service on a specified topic.
+- Subscriber (also called a consumer): receives messages on a specified subscription.
+- publisher creates and sends messages to a topic.
+- Subscriber applications create a subscription to a topic to receive messages from it.
+- Communication can be
+	- one-to-many (fan-out)
+	- many-to-one (fan-in),
+	- many-to-many.
+ The flow of messages through Pub/Sub is as
+
+![image](https://github.com/user-attachments/assets/8947de2b-3f81-4da3-8a95-1c907cd4ed2d)
+
+
+In above figure
+
+- There are two publishers publishing messages on a single topic.
+- 2 subscriptions to the topic
+- The first subscription has two subscribers, so messages will be load-balanced across them
+- each subscriber receiving a subset of the messages
+- The second subscription has one subscriber that will receive all of the messages.
+- The bold letters are messages.
+- Message A comes from Publisher 1 and sent to Subscriber 2 via Subscription 1, and to Subscriber 3 via Subscription 2.
+- Message B comes from Publisher 2 and is sent to Subscriber 1 via Subscription 1 and to Subscriber 3 via Subscription 2.
+###### Publisher and subscriber endpoints
+
+- Publishers should make HTTPS requests to pubsub.googleapis.com
+- It can be
+	- an App Engine app
+	- a web service hosted on Google Compute Engine
+	- other third-party network, an app installed on a desktop or mobile device, or even a browser.
+   
+	![image](https://github.com/user-attachments/assets/43f1d955-09ba-4184-a005-307ce9018864)
+
+	- Pull subscribers make HTTPS requests to pubsub.googleapis.com.
+	- Push subscribers must be Webhook endpoints that can accept POST requests over HTTPS.
+###### Common use cases
+
+- Balancing workloads in network clusters.
+- Implementing asynchronous workflows.
+- Distributing event notifications.
+- Refreshing distributed caches.
+- Logging to multiple systems.
+- Data streaming from various processes or devices.
+###### Architecture
+
+- Publisher and subscriber clients are not aware of the location of the servers to which they connect or how those services route the data.
+- load balancing direct publisher traffic to the nearest GCP data center
+- individual message is stored in a single region.
+- topic may have messages stored in many regions.
+- When a subscriber client requests messages published to this topic, it connects to the nearest server
+- Pub/Sub is divided into two primary parts:
+	- the data plane managing moving messages between publishers and subscribers,
+	- the control plane, managing assignment of publishers and subscribers to servers on the data plane.
+- data plane servers are called forwarders
+- control plane servers are called routers
+- publishers and subscribers are connected to their assigned forwarders
+- so easily upgrade the control plane of Pub/Sub without affecting any clients
+- All message is a base64-encoded message body and an arbitrary set of key-value pairs called attributes.
+- There is no structure or context to the message so, JSON or XML entities must be enforced. Each message has a globally unique message ID, to identify if it has already been processed.
+- Messages may be up to 10 MB in total size
+- Two methods for message delivery: push subscriptions and pull subscriptions
+	- In a push subscription, server sends a request to the subscriber app at a preconfigured URL endpoint.
+	- In the pull model, the subscriber requests messages from the server and acknowledges receipt.
+- Push subscriptions have a limits of 10,000 messages per second and 10,000 concurrent message deliveries.
+- By default, subscriptions are created with an ack deadline of 10 seconds and the message deadline may be increased to up to 600 seconds.
+- By default, subscriptions expire after 31 days of inactivity
+- Using subscription expiration policies, can configure the inactivity duration
+###### Topic and Message Management
+
+- can create, delete, and view topics using
+	- the API
+	- the Google Cloud Console
+	- the gcloud command-line tool
+- must create a subscription to a topic before subscribers can receive messages published to the topic.
+- create subscriptions with
+	- the API
+	- the Google Cloud Console
+	- the gcloud command-line tool
+ 
+
+###### Resource Name
+ 
+- Resource name uniquely identifies a Pub/Sub resource
+- Resource can be a subscription or topic
+- must fit the following format: projects/project-identifier/collection/relative-name
+- The project-identifier must be the project ID, available from the Google Cloud Console. For example, projects/myproject/topics/mytopic.
+- The collection must be one of subscriptions or topics.
+- The relative-name must:
+	- Not begin with the string goog.
+	- Start with a letter
+	- Contain between 3 and 255 characters
+	- Contain only the following characters:
+	- Letters: [A-Za-z]
+	- Numbers: [0-9]
+	- Dashes: –
+	- Underscores: _
+	- Periods: .
+	- Tildes: ~
+	- Plus signs: +
+	- Percent signs: %
+ 
+
+###### Message Storage Security
+
+- If publish messages to a global endpoint, automatic storage in the nearest Google Cloud region.
+- topic message storage policy ensure all data published to a topic is persisted in a specific region or set of regions, regardless of the publish request’s origin.
+- When multiple regions are allowed by the policy, Pub/Sub chooses the nearest allowed region.
+	- To configure all of the topics in an organization-wide scope, use the Resource Location Restriction organization policy.
+	- For fine-grained control, configure a topic’s message storage policy at topic creation, or via the UpdateTopic operation.
+- You can configure the policy using the:
+	- Topic details view
+	- gcloud command-line tool
+	- Service API (using client libraries)
+###### Authentication and Access
+
+- Following authentication methods allowed
+	- Service accounts
+	- User accounts – You can authenticate users directly to application, when the application needs to access resources on behalf of an end user.
+- Uses Cloud IAM for access control
+- access control can be configured at the project level and at the individual resource level.
+### Monitoring
+- The Pub/Sub API exports metrics via Cloud Monitoring.
+- Cloud Monitoring can create monitoring dashboards and alerting policies or access the metrics programmatically.
+###### Metrics –
+
+- You can use these metrics to:
+- Understand how data is distributed across the world.
+- Optimize publisher and subscriber deployment location, based on that data.
+- Counts of unacknowledged stored messages: subscription/num_unacked_messages_by_region
+- Volume of stored data: subscription/unacked_bytes_by_region
+- Age of oldest message: subscription/oldest_unacked_message_age_by_region
+- For backlog : subscription/num_undelivered_messages and subscription/oldest_unacked_message_age
+- Keeping publishers healthy monitor topic/send_request_count, grouped by response_code.
+  
+# 12. Cloud Dataflow
+- It is a managed service
+- executes data processing patterns.
+- Uses Apache Beam SDK
+- Can develop both batch and streaming pipelines.
+###### Pipeline
+- It manage data similar to a factory line
+- Tasks include
+	- Transforming data
+	- Aggregating data and computing
+	- Enriching data.
+	- Moving data.
+- Data Pipeline views all data as streaming
+- It breaks dataflows into smaller units
+- Tasks are written in Java or Python using beam sdk
+- Jobs are executed in parallel
+- Same code is used for streaming and batch
+- Pipeline is a directed graph of steps
+- Source/Sink can be filesystem, gcs, bigquery, pub/sub
+- Runner can be local laptop, dataflow(in cloud)
+- Output data written can be sharded or unsharded.
+- Input and outputs are pcollection. Pcollection is not in-memory and can be unbounded.
+- Each transform – give a name
+- Read from source, write to sink
+- Common tasks to do
+- Convert incoming data to a common format.
+- Prepare data for analysis and visualization.
+- Migrate between databases.
+- Share data processing logic across web apps, batch jobs, and APIs.
+- Power data ingestion and integration tools.
+- Consume large XML, CSV, and fixed-width files.
+- Replace batch jobs with real-time data.
+- pipeline components
+- Data Nodes – for input data
+- Activities – work definition to do
+- Preconditions
+- Resources
+- Actions – An action that is triggered if conditions are met
+-  
+- 
+###### Types
+
+Types of pipelines are
+ 
+	- useful for large volumes of data at a regular interval
+	- no real-time processing needed
+- Real-time
+	- to process data in real time.
+	- processing data from a streaming source
+- Cloud native
+	- optimized to work with cloud-based data, such as data from AWS buckets.
+	- tools are hosted in the cloud
+### Cloud Dataflow Overview
+
+
+
+
+### Key Concepts
+### Pipeline Design
+### Pipeline Lifecycle, creation and Transform
+### Cloud Dataflow templates
+### Streaming Pipeline
+### Best Practices
+
+# 13. Dataproc
+### Dataproc Overview
+### Configure Dataproc Cluster and Submit Job
+### Migrating to Google Cloud
+### Best Practices
+
+# 14. BigQuery
+### BigQuery Overview
+### Interacting with BigQuery
+### Loading Data
+### Exporting Data
+### Optimize for Performance and Cost
+### Queries
+### BigQuery Logging and Monitoring
+### BigQuery Best Practices
+
+# 15. Google Stackdriver
+### Monitoring
+### Logging
+### Error Reporting
+### Debugging
+### Tracing
+
+# 16. Machine Learning
+### What is Machine Learning?
+### Inductive Learning
+### Machine Learning Algorithms
+### Neural Networks
+
+# 17. Google AI Platform (Formerly Cloud ML Engine)
+### AI Platform Overview
+### AI Platform Training
+### AI Platform Pipelines
+
+# 18. Pre-trained Machine Learning API’s
+### Pre-trained ML API’s
+### Cloud Vision Product Search
+### Vision API
+### NL API
+
+# 20. Datalab
+### Datalab Overview
+### Running Datalab
+
+# 21. Dataprep
+### Dataprep Overview
+
+# 22. DataStudio
+### DataStudio Basics
+### Steps to use the tool
+
+# 23. Cloud Composer
+### Cloud Composer Overview
+
+# 24. Security and Compliance
+### Google Security Culture
+### Operational Security
+### Technology with Security at Its Core
+### Independent Third-Party Certifications
+### Regulatory compliance
+### General Data Protection Regulation (GDPR)
+### The Health Insurance Portability and Accountability Act of 1996 (HIPAA)
+### Cloud Data Loss Prevention (DLP)
+### Encryption Basics
+### Cloud Key Management Service
+
+# 25. Cloud IAM
+### Access management
+### Cloud IAM policy
+### Cloud IAM working
