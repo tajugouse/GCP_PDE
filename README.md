@@ -1625,8 +1625,57 @@ Other settings –
 - Public IP (If enabled, instance is allocated a public IPv4 address. When you disable Public IP, that address is released)
   
 # 9. Datastore
-- Datastore Overview
-- Data Organization
+- A highly-scalable NoSQL database for web and mobile applications.
+  
+### Datastore Overview
+- A NoSQL database.
+- Firestore is the newest version of Datastore
+- NoSQL Database
+- They are non-relational
+- easy to scale (horizontally or vertically) better than relational databases
+- Are either schema-free or have relaxed schemas
+- No definition of the schema of the data needed
+- Distributed in nature
+- Have auto-scaling and fail-over capabilities
+- May not comply with ACID requirement
+- Types
+	- Key-value – simplest, data item stored as an attribute name (or “key”) together with its value.
+	- Wide-column – store data together as columns instead of rows and are optimized for queries over large datasets.
+	- Document databases – pair each key with a complex data structure known as a document. Documents can contain many different key-value pairs, or key-array pairs, or even nested documents.
+	- Graph databases – store information about networks, such as social connections.
+- Hierarchies or entity groups: – set of entities connected through ancestry to a common root element.
+- Join operation is not supported, we need to denormalize table
+- Aggregation and “group by” are not supported
+- Inequality filters are limited to at most one property
+- Do not support substring matches, case-insensitive matches, or so-called full-text search.
+- The NOT, OR, and != operators are not natively supported
+  
+### Data Organization
+- Records, called “entities” in Datastore, are retrieved by using a key.
+- The key is a complex data structure that can be used to model relationships.
+- The simplest key has a string kind value and either a numeric id value or a string name value.
+- Multiple records can be found that match criteria
+- Records can also be ordered.
+>	Concept							Datastore	Firestore			Relational_database
+	Category of object				Kind		Collection group	Table
+	One object						Entity		Document			Row
+	Individual data for an object	Property	Field				Column
+	Unique ID for an object			Key			Document ID			Primary key
+- Datastore entities of the same kind can have different properties
+- Entity – single object (like row or document)
+- Kind – category of object (Like table name)
+- Property – individual data for an object(like column)
+- Key – unique ID for each entity
+- Different entities can have properties with the same name but different value types.
+- All queries are served by previously built indexes,
+- Datastore is schemaless.
+- Has limited support for queries and transactions
+- Does not support join, inequality filtering on multiple properties or aggregation operations
+- Datastore is apt for
+- applications that rely on highly available structured data at scale.
+- Product catalogs for real-time inventory and product details for a retailer.
+- User profiles giving a customized experience based on the user’s past activities and preferences.
+- Transactions based on ACID properties, for example, transferring funds from one bank account to another.
 - Queries
 - Indexing
 - Data Consistency
