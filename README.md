@@ -2055,12 +2055,12 @@ The CAP theorem is for distributed system and they can guarantee at most two qua
 Comparison with other data models
 
 				Cloud_Spanner	Traditional Relational	Traditional Non-Relational
-Schema			Yes				Yes						No
-SQL				Yes				Yes						No
-Consistency		Strong			Strong					Eventual
-Availability	High			Failover				High
-Scalability		Horizontal		Vertical				Horizontal
-Replication		Automatic		Configurable				Configurable
+	Schema			Yes				Yes						No
+	SQL				Yes				Yes						No
+	Consistency		Strong			Strong					Eventual
+	Availability	High			Failover				High
+	Scalability		Horizontal		Vertical				Horizontal
+	Replication		Automatic		Configurable				Configurable
  
 
  
@@ -2443,46 +2443,1020 @@ Types of pipelines are
 	- tools are hosted in the cloud
 ### Cloud Dataflow Overview
 
+Google Cloud Dataflow is
 
+- a managed data transformation service,
+- has a unified data processing model to process both unbounded and bounded datasets.
+- a serverless platform
+- write code in the form of pipelines, and submit to CloudDataflow for execution.
+- offers autoscaling workers and dynamically rebalancing workloads across those workers
+- provides the open Apache Beam programming model as a managed service for
+- process data in multiple ways as
+	- batch operations
+	- extract-transform-load (ETL) patterns
+	- continuous, streaming computation.
+- pipelines operate on data in terms of collections, using the abstract PCollection .
+	- Each PCollection is a distributed set of homogeneous data as in the pipeline
+	- can represent bounded data (CSV file in Cloud Storage) or unbounded data source, such (Cloud Pub/Sub topic).
+	- PCollection is immutable.
+	- each element in PCollection has an associated timestamp either from data’s source, or explicitly defined.
 
 
 ### Key Concepts
+###### Pipelines
+
+- encapsulates the all processes in reading input data, transforming that data, and writing output data.
+- The input source and output sink can be the same or of different types
+- Apache Beam programs start by constructing a Pipeline object
+- then using that object as the basis for creating the pipeline’s datasets.
+- Each pipeline represents a single, repeatable job.
+###### PCollection
+
+- It represents a distributed, multi-element dataset
+- acts as the pipeline’s data.
+- Apache Beam transforms use PCollection objects as inputs and outputs for each step in pipeline.
+- A PCollection can hold a dataset of a fixed size or an unbounded dataset from a continuously updating data source.
+###### Transforms
+
+- Represent a processing operation that transforms data.
+- takes one or more PCollections as input, performs an specified operation and produces one or more PCollections as output.
+- can perform many kind of processing operation
+
+###### ParDo
+- 
+- It is the core parallel processing operation in the Apache Beam SDKs,
+- It invokes a user-specified function on each of the elements of the input PCollection.
+- ParDo collects the zero or more output elements into an output PCollection.
+- The ParDo transform processes elements independently and possibly in parallel.
+###### Pipeline I/O
+
+- let you read data into pipeline and write output data from pipeline.
+- consists of a source and a sink.
+- can also write a custom I/O connector.
+###### Aggregation
+
+- process of computing some value from multiple input elements.
+
+###### Side input
+ 
+- Can be static like constant
+- Can also be a list or map. If side input is a pcollection, we first convert to list or map and pass that as side input.
+- Call parDo.withsideInputs with the map or list
+
+###### Mapreduce
+ 
+- Map – operates in parallel, reduce – aggregates based on key
+- parDo acts on one item at a time, similar to map operation in mapreduce, should not have state/history. Useful for filtering, mapping.
+- In python, map done using map for 1:1, flatmap for non 1:1. In Java, done using parDo
+###### User-defined functions (UDFs)
+ 
+- Apache Beam allow executing user-defined code to configure the transform.
+- For ParDo, user-defined code specifies the operation to apply to every element,
+- UDFs can be written in a different language than the language of runner.
+###### Runner
+- 
+- the software that accepts a pipeline and executes it.
+- runners are translators or adapters to massively parallel big-data processing systems.
+###### Event time
+ 
+- The time a data event occurs,
+- determined by the timestamp on the data element itself.
+###### Windowing
+
+- enables grouping operations over unbounded collections
+- divides the collection into windows of finite collections
+###### Watermarks
+
+- Apache Beam tracks a watermark, all data in a certain window to have arrived in the pipeline.
+
+###### Trigger
+
+- Triggers determine when to emit aggregated results as data arrives.
+- For bounded data, results are emitted after all of the input has been processed.
+- For unbounded data, results are emitted when the watermark passes the end of the window
+
 ### Pipeline Design
+When designing Beam pipeline, consider a few basic questions:
+
+- Where is input data stored? How many sets of input data do you have?
+- What does data look like? It might be plaintext, formatted log files, or rows in a database table.
+- What do you want to do with data? The core transforms in the Beam SDKs are general purpose.
+- What does output data look like, and where should it go?
+- Transforms do not consume PCollections
 ### Pipeline Lifecycle, creation and Transform
+###### Pipelien Creation
+
+To construct a pipeline using the Beam SDKs
+
+- Create a Pipeline object.
+- Use a Read or Create transform to create one or more PCollections for pipeline data.
+- Apply transforms to each PCollection.
+- Write or otherwise output the final, transformed PCollections.
+- Run the pipeline.
+- Pipeline execution is separate from Apache Beam program’s execution; and is executed by a pipeline runner.
+- can specify the pipeline runner and other execution options
+###### Transforms
+
+- Element-wise transforms operate on individual elements within PCollection .
+- Similar to MapReduce.
+- execute transformations by invoking a ParDo operation
 ### Cloud Dataflow templates
+- Dataflow templates enables staging of pipelines on Cloud Storage
+- run them from a variety of environments. You can use one of the Google-provided templates or create own.
+- Templates benefits as:
+- Running pipeline does not require you to recompile code every time.
+- can run pipelines without the development environment and dependencies
+- Runtime parameters can customize the execution of the pipeline.
+- Non-technical users can run templates with the Google Cloud Console, gcloud command-line tool, or the REST API.
+- runtime parameters accept values only during pipeline execution.
 ### Streaming Pipeline
-### Best Practices
+In this, we will learn the concepts of Streaming Pipeline for Google Professional Data Engineer GCP exam.
 
+###### Streaming pipelines
+In streaming pipelines, unbounded PCollections, or unbounded collections, represent data. Data from a continually changing data source, such as Pub/Sub, is stored in an unbounded collection. In an unlimited collection, you can’t just use a key to organize elements. Because the data source is continually adding new components, there might be an endless number of elements for a particular key in streaming data. To aggregate elements in unbounded collections, you can utilize windows, watermarks, and triggers. Bounded PCollections that represent data in batch pipelines are also considered windows.
+
+###### Windows and windowing functions
+Unbounded collections are divided into logical components, or windows, using windowing techniques. Windowing functions use the timestamps of individual elements to organize unbounded collections. There are a limited amount of items in each window.
+
+With the Apache Beam SDK or Dataflow SQL streaming extensions, you may specify the following windows:
+
+- Tumbling windows (called fixed windows in Apache Beam): In the data stream, a tumbling window represents a consistent, discontinuous temporal span.
+- Hopping windows (called sliding windows in Apache Beam): In the data stream, a hopping window indicates a continuous time interval. Tumbling windows are discontinuous, whereas hopping windows might overlap.
+- Sessions Windows: A session window is made up of items that are separated by a time gap. A data stream’s gap duration is the time between new data. Data is allocated to a new window if it comes after the gap time.
+###### Watermarks
+A watermark is a threshold that tells Dataflow when all of the data in a window is expected to arrive. The data is considered late if it comes with a timestamp that is inside the timeframe but older than the watermark.
+
+Watermarks are tracked by Dataflow for the following reasons:
+
+- Data does not always come in the same sequence or at consistent intervals.
+- The order in which data events are created does not ensure that they will appear in pipelines in the same order in which they were generated.
+###### Triggers
+As data enters, triggers determine when to emit aggregated findings. By default, when the watermark reaches the edge of the window, the results are emitted. Create or edit triggers for each collection in a streaming pipeline using the Apache Beam SDK. Dataflow SQL does not allow you to create triggers. The Apache Beam SDK allows you to create triggers based on any combination of the following criteria:
+
+- The timestamp on each data piece indicates the event time.
+- Processing time refers to the amount of time it takes for a data element to be processed at each stage of the pipeline.
+- A collection’s number of data components.
+### Best Practices
+- Using composable transforms having business logic creates pipelines to easily maintain, troubleshoot and develop with.
+- Ensure they have a clear owner
+- Have a clear way to understand and document how changes to those transforms will affect all pipelines that use them.
+- Always use the name field to assign a useful, at-a-glance name to the transform.
+- Ensure that all transforms have versions and that all pipelines also have versions.
+- Ensure you have a consistent policy to deal with errors and issues across all of transforms.
+- End-to-end data pipeline testing should include lifecycle testing, particularly analyzing and testing all the different update/drain/cancel options.
+- In addition to the standard metrics, build custom metrics into pipeline as per
+- Create backups of pipelines
+- Create multiple replica pipelines
 # 13. Dataproc
+- A open source data and analytics processing service
+- Offers Resizable clusters
+- Gives Autoscaling clusters
+- Cloud integrated with GCP
+- Provides Versioning
+- Is Highly available
+- Has automatic or manual configuration option
+- Provides developer tools
+- Optional components to install and configure additional components on the cluster.
+- Store Custom images
+- Dataproc allows specifying custom machine types
+- standard mode has 1 master, multiple workers
+- HA mode has 3 masters, multiple workers
+- Provides Component Gateway and notebook access
+- Has workflow templates
 ### Dataproc Overview
+
+- A managed Spark and Hadoop service
+- Use for batch processing, querying, streaming, and machine learning.
+- automation helps you
+	- create clusters quickly
+	- manage them easily
+	- save money by turning clusters off when you don’t need them.
+- Use cases –
+	- Move Hadoop and Spark clusters to the cloud
+	- Data science on Dataproc
+- Apache Hadoop ecosystem components are automatically installed on the cluster.
+- initialization actions provide faster cluster startup times
+- clusters can be provisioned with a custom image
+- Dataproc manages preemptible node addition and deletion
+	- Atleast single regular worker is needed.
+	- Workers can be preemptible.
+	- preemptible worker nodes will not have hdfs storage,
+	- preemptible has same config as regular worker nodes.
+- Web ports used tcp port 8088 which is Hadoop, 9870 which is HDFS and 8080 which is Datalab
+- access Dataproc from
+- Through the REST API
+- Using the Cloud SDK
+- Using the Dataproc UI
+- Through the Cloud Client Libraries
+
 ### Configure Dataproc Cluster and Submit Job
+Configuration terms
+
+Cluster Region:
+
+- specify a global region or a specific region for cluster.
+- The global region is a special multi-region endpoint to deploy instances into any user-specified Compute Engine zone.
+- can also specify distinct regions
+ 
+
+Compute Engine Virtual Machine instances (VMs)
+
+- consist of master and worker VMs,
+- require full internal IP networking access to each other.
+- Default network available to create a cluster helps ensure this access.
+
+Labels –
+
+- apply user labels to cluster and job resources
+- to group resources and related operations for later filtering and listing.
+- associate labels when resource is created, at cluster creation or job submission.
+- label is propagated to operations performed on the resource
+ 
+
+Cluster Update / Delete
+
+- can update a cluster by Dataproc API, gcloud, or from Configuration tab of Cluster details page for the cluster in the Google Cloud Console.
+- Following can be updated
+	- the number of standard worker nodes in a cluster
+	- the number of secondary worker nodes in a cluster
+	- whether to use graceful decommissioning to control shutting down a worker after its jobs are completed
+	- adding or deleting cluster labels
+Deleting a cluster –
+
+- delete a cluster by
+	- Dataproc API
+	- gcloud
+	- Google Cloud Console.
+Submit a job
+
+- Submit a job to an existing cluster by Dataproc API, gcloud or Google Cloud Console
+- can also SSH into the master instance in cluster, and then run a job
+Log and Monitor
+
+- job and cluster logs can be viewed, searched, filtered, and archived in Cloud Logging.
+  
 ### Migrating to Google Cloud
+two migration models to transferring HDFS data
+
+##### push
+
+simplest model
+the source cluster runs the distcp jobs on its data nodes and pushes files directly to Cloud Storage.
+
+![image](https://github.com/user-attachments/assets/bc8a80dc-8a70-4c5a-87ad-95939af18b87)
+
+##### Pull
+
+is complex
+An ephemeral Dataproc cluster runs the distcp jobs on its data nodes,
+pulls files from the source cluster, and copies them to Cloud Storage.
+
+![image](https://github.com/user-attachments/assets/a35af540-b7d9-4107-93e8-e53407e737b4)
+
+
 ### Best Practices
-
+- Specify cluster image versions.
+- Know when to use custom images.
+- Use the Jobs API for submissions.
+- Control the location of initialization actions.
+- Keep an eye on Dataproc release notes.
+- Know how to investigate failures.
+- Use Google Cloud Storage as primary data source and sink
+- Persist information on how to build clusters
+- Identify a source control mechanism
+- Externalize the Hive metastore database with Cloud SQL
+- Use cloud authentication and authorization policies
+- Knows way around Stackdriver
+- Transform YARN queues into workflow templates
+- Start small and enable autoscaling
+- Consolidate job history across multiple clusters
+- Take advantage of GCP services
+  
 # 14. BigQuery
+A serverless, highly scalable, and cost-effective cloud data warehouse
+- analyze gigabytes to petabytes of data using ANSI SQL
+- Efficiently run analytics at scale
 ### BigQuery Overview
+- fully managed, petabyte scale, low cost analytics data warehouse.
+- It is NoOps—no infrastructure to manage
+- Functions to be done on BigQuery
+	- Loading and exporting data
+	- Querying and viewing data
+	- Managing data
+- Access by
+	- The BigQuery web UI in the Cloud Console
+	- The BigQuery classic web UI
+	- The BigQuery command-line tool
+	- The BigQuery REST API or client libraries
+##### Cost Control
+
+For cost control costs
+
+- Estimate cost of a query before execution
+- Estimate storage costs
+- Set custom cost controls using custom quotas
+- Analyze audit logs to monitor query costs and BigQuery usage
+ 
+
+##### Access Control
+
+- Access control by Cloud Identity and Access Management
+- For access to BigQuery resource, assign roles to a user, group, or service account.
+- If roles given at organization and project level, then can run BigQuery jobs or manage all of a project’s BigQuery resources.
+- Roles at the dataset level provide access only to one or more datasets.
+- Datasets are child resources of projects.
+- Tables and views are child resources of datasets —inherit permissions from their parent dataset.
+- It automatically encrypts all data before it is written to disk.
+- Also automatically decrypted when read by an authorized user.
+- By default, Google manages the key encryption keys used to protect data.
+- Option to use customer-managed encryption keys
 ### Interacting with BigQuery
+##### Web UI in the Cloud Console
+- graphical web UI in the Cloud Console
+- to create and manage BigQuery resources
+- to run SQL queries.
+- has three main sections: navigation panel for viewing, details panel for more details and query editor to make queries
+##### BigQuery classic web UI
+classic web UI can do tasks like
+- running queries
+- loading data
+- exporting data.
+ 
+
+##### bq command-line tool
+- A python-based, command-line tool
+- supports two kinds of flags — global flags and command flags.
+Flags to be used as
+
+		> bq –global_flag argument bq_command –command-specific_flag argument
+
+- Global flags (or common flags) can be used in all commands.
+- Command-specific flags apply to a specific command.
+ 
+
+Separate multiple global or command-specific flags using a space. For example:
+
+		bq \
+		
+		–global_flag argument \
+		
+		–global_flag argument \
+		
+		bq_command \
+		
+		–command-specific_flag argument \
+		
+		–command-specific_flag argument
+		
+ 
+
+Specify command arguments as
+
+- –flag=argument
+- –flag=’argument’
+- –flag=”argument”
+- –flag argument
+- –flag ‘argument’
+- –flag “argument”
+ 
+
+For single or double quotes around arguments –
+
+		> bq query –nouse_legacy_sql \‘SELECT COUNT(*) FROM `bigquery-public-data`.samples.shakespeare’
 ### Loading Data
+- load data from
+	- From Cloud Storage
+	- From other Google services
+	- From a readable data source
+- By inserting individual records using streaming inserts
+- Using DML statements to perform bulk inserts
+- Using a BigQuery I/O transform in a Dataflow pipeline to write data to BigQuery
+- can load data into a new table or partition
+- can also append data to an existing table or partition
+- can overwrite a table or partition.
+- method for ingesting data into BigQuery:
+	- the BigQuery Jobs API
+	- streaming writes
+	- writing query results into a table
+	- loading CSV files from Cloud Storage
+	- using BigQuery as a Cloud Dataflow sink
+- The default source format for loading data is CSV.
+- Also supports streaming inserts by BigQuery API and BigQuery buffers records before insertion.
+ 
+
+Load data from Cloud Storage and readable data sources in the following formats:
+
+Cloud Storage:
+
+- Avro
+- CSV
+- JSON (newline delimited only)
+- ORC
+- Parquet
+- Datastore exports
+- Firestore exports
+Readable data source (such as local machine):
+
+- Avro
+- CSV
+- JSON (newline delimited only)
+- ORC
+- Parquet
+ 
+
+Choosing a data ingestion format
+
+- can load data into variety of formats.
+- Loaded data is converted into columnar format for Capacitor (BigQuery’s storage format).
+- During loading select data ingestion format based on
+	- data’s schema
+	- Embedded newlines
+	- External limitations
+
+Loading encoded data
+
+- BigQuery supports UTF-8 encoding
+- for both nested or repeated and flat data.
+- ISO-8859-1 encoding for flat data only for CSV files.
+- By default, the BigQuery service expects all source data to be UTF-8 encoded.
+
+Loading compressed and uncompressed data
+
+- The Avro binary format is the preferred for loading both compressed and uncompressed data.
+
+Loading denormalized, nested, and repeated data
+
+- BigQuery performs best when data is denormalized.
+ 
+
+Schema auto-detection
+
+- available when you load data into BigQuery
+- Also when you query an external data source.
+- Steps
+	- BigQuery starts inference process by selecting a random file in the data source and scanning up to 100 rows of data to use as sample.
+	- then examines each field and attempts to assign a data type to that field based on the values in the sample.
+- use schema auto-detection for JSON or CSV files.
+- not available for Avro files, ORC files, Parquet files, Datastore exports, or Firestore exports
+ 
+
+BigQuery Data Transfer Service
+
+It automates loading data into BigQuery from these services:
+
+Google Software as a Service (SaaS) apps
+
+- Campaign Manager
+- Cloud Storage
+- Google Ad Manager
+- Google Ads
+- Google Merchant Center (beta)
+- Google Play
+- Search Ads 360 (beta)
+- YouTube Channel reports
+- YouTube Content Owner reports
+
+External cloud storage providers
+- Amazon S3
+
+Data warehouses
+
+- Teradata
+- Amazon Redshift
 ### Exporting Data
+- can export the data in several formats.
+- can export up to 1 GB of data to a single file.
+- If exporting more than 1 GB of data, export to multiple files.
+- need permissions to access the BigQuery table for export
+ 
+
+Export limitations
+
+- cannot export table data to a local file, Google Sheets, or to Google Drive.
+- can export up to 1 GB of table data to a single file.
+- cannot export nested and repeated data in CSV format.
+- For nested and repeated data use Avro and JSON exports.
+- If export in JSON format, INT64 (integer) data types are encoded as JSON strings.
+- cannot export data from multiple tables in a single export job.
+- cannot choose a compression type other than GZIP if exporting by Cloud Console or the classic BigQuery web UI.
+
+You cannot change the location of a dataset after it is created, but you can make a copy of the dataset. You cannot move a dataset from one location to another, but you can manually move (recreate) a dataset.
+
+##### Data format and compression
+
+Data formats and compression types for exported data, are
+
+ ![image](https://github.com/user-attachments/assets/ece906df-8f19-45f1-9aaa-9a4efc12b0de)
+
+
+Exporting data stored in BigQuery
+
+export table data by:
+
+- Using the Cloud Console or the classic BigQuery web UI
+- Using the bq extract CLI command
+- Submitting an extract job via the API or client libraries
+
+Exporting data into one or more files
+
+- The destinationUris property indicates the location(s) and file name(s)
+- BigQuery supports a single wildcard operator (*) in each URI.
+- The wildcard can appear anywhere in the URI except as part of the bucket name.
+- With wildcard BigQuery creates multiple sharded files based on the supplied pattern.
+- wildcard is replaced with a number (starting at 0), left-padded to 12 digits.
 ### Optimize for Performance and Cost
+Partitioned table
+
+- a special table that is divided into segments, called partitions,
+- make it easier to manage and query data.
+- By dividing a large table improve query performance, and control costs
+- partition tables by:
+	- Ingestion time
+	- Date/timestamp
+
+Clustered tables
+
+- table data is automatically organized based on the contents of one or more columns in the table’s schema.
+- The columns specified are used to colocate related data.
+- order of columns is important for the sort order of the data.
+- Clustering improve the performance of queries
+- During write data is sorted using the values in clustering columns.
+- clustering is allowed over a partitioned table.
+- Use clustering if
+- data is already partitioned on a date, timestamp, or integer column.
+- using filters or aggregation against particular columns in queries.
+- clustering is based on ingestion time
+	- date/timestamp
+	- integer range
+ 
+
+Views
+
+- a virtual table defined by a SQL query.
+- A view is queried it in the same way you query a table.
+- query results of view contain data only from the tables and fields specified in the query that defines the view.
+- can query views in BigQuery by
+	- Query editor box in the Cloud Console
+	- Compose Query option in the classic BigQuery web UI
+	- BigQuery command-line tool’s bq query command
+	- BigQuery REST API to programmatically call the jobs.query or query-type jobs.insert methods
+	- BigQuery client libraries
+- Also use view as a data source for a visualization
+- views limitations
+	- The dataset that contains view and the dataset that contains the tables referenced by the view must be in the same location.
+	- cannot run a BigQuery job that exports data from a view.
+	- cannot use the TableDataList JSON API method to retrieve data from a view.
+	- cannot reference query parameters in views.
+	- If schema change after view is created, the reported schema will be inaccurate
+	- cannot include a user-defined function in the SQL query that defines a view.
+	- cannot reference a view in a wildcard table query.
+ 
+
+Reservations
+
+- two pricing models
+- On-demand pricing: You pay only for the data scanned by queries.
+- Flat-rate pricing: Offers predictable and consistent month-to-month costs.
+- By default, billed as per on-demand pricing model.
+- With BigQuery Reservations, can switch to the flat-rate pricing model by purchasing commitments
+- commitments are dedicated portions of query processing capacity measured in slots with cost of all bytes processed is included in the flat-rate price.
+ 
+
+INFORMATION_SCHEMA
+
+- For on-demand pricing, queries against INFORMATION_SCHEMA views 10 MB is the minimum billing amount
+- For flat-rate pricing, queries against INFORMATION_SCHEMA views and tables consume purchased BigQuery slots.
+- INFORMATION_SCHEMA queries are not cached
+- charged each time you run an INFORMATION_SCHEMA query,
+- not charged storage fees for the INFORMATION_SCHEMA views.
 ### Queries
+- BigQuery supports two types of queries:
+	- Interactive queries
+	- Batch queries
+- By default, BigQuery runs interactive queries, or query is executed as soon as possible.
+- BigQuery queues each batch query on behalf and starts the query as soon as idle resources are available
+- Run queries by
+	- Query editor in the Cloud Console
+	- Compose Query option in the BigQuery web UI
+	- BigQuery command-line tool’s bq query command
+	- BigQuery REST API to programmatically call the jobs.query or query-type jobs.insert methods
+	- BigQuery client libraries
+- Query execution involves root servers which interpret the query and send it to intermediate servers, which orchestrate the execution to many leaf servers. Leaf servers read from disk and execute.
+- Analytical window functions:
+	- Aggregate – sum, count
+	- Navigation – lead, lag
+	- Ranking, numbering – rank, cume_dist
+	- “Partition by” is similar to “group by” but doesnt aggregate. This is different from bq partitions how data is stored.
+- Data Types – struct, array, timestamp, int64, float64, string
+- Inner table can be using WITH
+- ARRAY_AGG – creates array. UNNEST – break array.
+- STRUCT – creates struct
+- User defined functions – sql udf as well as javascript udfs is possible
+- Udf has constraints – size of udf output is limited, native javascript not supported
+- Unnest – takes an array and returns table
+
+
+Query jobs
+
+- Jobs are actions that BigQuery runs on behalf to
+	- load data
+	- export data
+	- query data
+	- copy data.
+- With Cloud Console, the classic BigQuery web UI, or the CLI for above jobs, a job resource is automatically created, scheduled, and run.
+- If create a job programmatically, BigQuery schedules and runs the job for you.
+- jobs execute asynchronously
+- jobs can be polled for their status.
+
+Saving and sharing queries
+
+- If save a query, it can be
+- private (visible only to you)
+- shared at the project level (visible to project members)
+- public (anyone can view it).
 ### BigQuery Logging and Monitoring
+- use Cloud Monitoring to monitor BigQuery project:
+- Display the metrics collected by Cloud Monitoring in own charts and dashboards.
+- Create an alert for any thresholds.
+
+Useful Metrics –
+  
+![image](https://github.com/user-attachments/assets/3400ff6a-620e-4e5b-9017-c830461de023)
+
+- Use Cloud Audit Logs for audit log messages
+- BigQuery service has 3 distinct messages:
+	- AuditData
+	- BigQueryAuditMetadata
+	- AuditLog
+- Go to the Logs Viewer page in the Cloud Console for viewing logs for policy tag events
+
 ### BigQuery Best Practices
+For Controlling costs
 
+- Avoid SELECT *
+- Sample data using preview options
+- Price queries before running them
+- Limit query costs by restricting the number of bytes billed
+- LIMIT doesn’t affect cost
+- View costs using a dashboard and query audit logs
+- Partition data by date
+- Materialize query results in stages
+- Consider the cost of large result sets
+- Use streaming inserts with caution
+ 
+For Query
+
+- Avoid repeated joins and subqueries
+- Carefully consider materializing large result sets
+- Use a LIMIT clause with large sorts
+- Denormalize data whenever possible
+- Avoid excessive wildcard tables
+- Reduce data before using a JOIN
+- Do not treat WITH clauses as prepared statements
+- Avoid tables sharded by date
+ 
+For Storage
+
+- Use the expiration settings to remove unneeded tables and partitions
+- Take advantage of long-term storage
+- Use the pricing calculator to estimate storage costs
 # 15. Google Stackdriver
+- provides dashboards and alerts for cloud-powered applications.
+- Can configure Stackdriver Monitoring using the Stackdriver Monitoring Console.
+- Can review performance metrics for cloud services, VMs, etc
+- Can take a Debug Snapshot in applications running on App Engine, Compute Engine and Container Engine.
+- Can view Application Logs.
+- Setup Metrics, Monitor them and get alerts.
+- Trace API calls and get a breakdown on response times and potential bottlenecks in code.
+- Add log points to a running application, without the need to deploy app. This is a truly unique (and hopefully useful) feature.
+  
 ### Monitoring
+- Stackdriver Monitoring measures the health of cloud resources and applications by providing visibility into metrics
+- Stackdriver Error Reporting identifies and analyzes cloud application errors.
+- Stackdriver Debugger inspects the state of an application, deployed in Google App Engine or Google Compute Engine,
+- Stackdriver Trace collects network latency data from applications deployed in Google App Engine.
+- Stackdriver Logging provides real-time log management and analysis
+- It supports default metrics such as CPU utilization, disk I/O, memory utilization, network traffic, and uptime
+- it needs an agent to be installed in each VM for monitoring workload specific metrics.
+- Supports custom metrics by Stackdriver API.
+- Stackdriver Monitoring is based on collectd
+  
 ### Logging
-### Error Reporting
-### Debugging
-### Tracing
+- collect and store logs from workloads deployed in GCP or AWS
+- can gather logs from
+	- Compute Engine
+	- App Engine
+	- EC2,
+	- Google Cloud Audit Logs
+- Based on Fluentd
+- relies on the google-fluentd logging agent installed in each VM.
+- logs can be viewed in the Stackdriver Log Viewer.
+- can also use the Logging API to programmatically send the logs.
+- Can export logs to external services
 
+### Error Reporting
+- service that aggregates, stores and displays errors in a central location.
+- can show time charts, occurrences, affected user counts, first and last seen dates, and cleaned exception stack traces.
+- supports applications deployed in App Engine and Compute Engine.
+- can configure the service to send emails when a new error occurs.
+- Errors can also be retrieved via REST API.
+### Debugging
+- Earlier called as Cloud Debugger
+- Stackdriver Debugger lets developers inspect the state of the code of a Java, Python, or Go application in App Engine or Compute Engine.
+- service doesn’t interfere with the performance of application.
+- state of an application can be viewed without adding logging statements explicitly.
+- works only with applications whose source code is stored in Google Cloud Source Repository, Github or Bitbucket.
+### Tracing
+- It is the distributed tracing system for applications deployed in App Engine.
+- collects latency data from applications
+- displays data in near real time in the console.
+- investigate the latency impacting the application performance.
+- can trace the latency data for requests to App Engine URIs and RPC calls.
+  
 # 16. Machine Learning
 ### What is Machine Learning?
-### Inductive Learning
-### Machine Learning Algorithms
-### Neural Networks
+- an application of artificial intelligence
+- where a computer/machine learns from the past experiences (input data)
+- and makes future predictions.
+- The system performance should be at least human level.
+- ML provides enables machines to learn autonomously based on experiences, observations and analysing patterns within a given data set without explicitly programming.
+- Process – we input a data set, machine will learn by identifying and analysing patterns and learn to take decisions autonomously
+- Example – Facebook’s facial recognition algorithm
 
+Components
+
+All ML algorithm have three components:
+
+- Representation: how to represent knowledge like decision trees, sets of rules, etc.
+- Evaluation: how to evaluate candidate programs (hypotheses) like accuracy, prediction and recall, likelihood, etc
+- Optimization: how candidate programs are generated or the search process like combinatorial optimization, convex optimization, constrained optimization.
+
+##### Types of Learning
+
+There are four types of machine learning:
+
+- Supervised learning: (or inductive learning) Training data includes desired outputs like identify spam, learning is supervised. It is most mature and  Defined as – if data is (x) and the output is (f(x)), goal is to learn the function for new data (x). Techniques include
+	- Classification: when the function being learned is discrete.
+	- Regression: when the function being learned is continuous.
+	- Probability Estimation: when the output of the function is a probability.
+- Unsupervised learning: Training data does not include desired outputs like clustering.
+- Semi-supervised learning: Training data includes a few desired outputs.
+- Reinforcement learning: Rewards from a sequence of actions.
+### Inductive Learning
+Used if
+- If no human expert.
+- no one can describe how to do it.
+- If desired function changes frequently.
+- If each user needs a custom function.
+### Machine Learning Algorithms
+##### Under-fitting & Over-fitting
+
+We try to make the machine learning algorithm fit the input data by increasing or decreasing the models capacity. In linear regression problems, we increase or decrease the degree of the polynomials.
+
+- Under-fitting: When the model has fewer features and hence not able to learn from the data very well. This model has high bias.
+- Over-fitting: When the model has complex functions and hence able to fit the data very well but is not able to generalize to predict new data. This model has high variance.
+ 
+
+##### Machine Learning Terminology
+
+Labels
+
+- It is the thing we’re predicting—the y variable in simple linear regression.
+- Like future price, kind of animal shown in a picture, the meaning of an audio clip, etc.
+
+Features
+
+- It is an input variable—the x variable in simple linear regression.
+- ML project can have a single feature or millions of features, specified as: x1,x2,…xn
+- In a spam detector, the features could include the following:
+- words in the email text
+- sender’s address
+- time of day the email was sent
+- email contains the phrase “one weird trick.”
+
+Examples
+
+- It is a particular instance of data, x.
+- two categories: labelled examples and unlabeled examples
+- A labelled example includes both feature(s) and the label or – labelled examples: {features, label}: (x, y)
+- Use labelled examples to train the model.
+- An unlabeled example contains features but not the label. That is: unlabeled examples: {features, ?}: (x, ?)
+ 
+
+##### Models
+
+- It defines the relationship between features and label.
+- two phases of a model’s life:
+	- Training means creating or learning the model or show the model labelled examples and enable the model to gradually learn the relationships between features and label.
+	- Inference means applying the trained model to unlabeled examples.
+ 
+
+##### Bias
+
+- A ML model has low bias if its predictability level is high.
+- Hence, fewer mistakes when it is working on a dataset.
+ 
+
+##### Cross-validation bias
+
+Technique that provides an accurate measure of the performance of ML model.
+
+##### Epoch
+
+1 traversal thru entire dataset. Traversal is called evaluation 
+
+##### Underfitting
+
+- If ML model is not able to predict with a decent level of accuracy, then the model underfits.
+- Due to
+	- not selecting the correct features for the prediction
+	- the problem statement is too complex
+ 
+
+##### Overfitting
+
+- It occurs when the model fits the data too well.
+- Overfitting model learns the detail and noise in the training data so as to negatively impacts performance
+- can be solved by decreasing the number of features/inputs or by increasing the number of training examples
+ 
+
+##### 3 ML approaches
+
+- Tensorflow
+- ML engine
+- prebuilt models
+ 
+
+##### Tensorflow
+
+- Has estimator api
+- model abstraction layer(layers, error function)
+- python low level library
+- c++ low level library
+- hardware(cpu, gpu, tpu)
+- Execution
+	- There is a build and run stage.
+	- Build stage builds the graphs.
+	- Run stage runs the tensor in a distributed manner.
+- Placeholder and feed_dict is a dynamic way of passing values
+- Data types are inferred implicitly
+- eager allows you to avoid the build-then-run stages. Used only for testing purposes.
+- Model types:
+	- Linear regressor
+	- DNregressor – deep neural network
+	- Linear classifier
+	- DNclassifier
+ 
+
+##### ML engine
+
+- Does both training and prediction
+- Supports tensorflow, xgboost, scikit learn, keras in beta
+ 
+
+##### Other terms
+
+- Training example: a sample from x including its output from the target function
+- Target function: the mapping function f from x to f(x)
+- Hypothesis: approximation of f, a candidate function.
+- Concept: A boolean target function, positive examples and negative examples for the 1/0 class values.
+- Classifier: Learning program outputs a classifier that can be used to classify.
+- Learner: Process that creates the classifier.
+- Hypothesis space: set of possible approximations of f that the algorithm can create.
+- Version space: subset of the hypothesis space that is consistent with the observed data.
+### Neural Networks
+In this, we will learn about the concepts of Neural Networks.
+
+##### What are Neural Networks?
+- It has multiple nodes that interconnects to each other,
+- mimics the neurons in our brain.
+- Each neuron inputs from another neuron, performs tasks, and transfers to another as output.
+
+![image](https://github.com/user-attachments/assets/b33a658a-0ea5-4381-b94d-baa096ab3726)
+
+
+In figure
+
+- Each circular node is an artificial neuron
+- arrow represents a connection from the output of one neuron to the input of another.
+
+##### Layers
+- As per diagram, there are 4 layers present – Layer 1, Layer 2, Layer 3 and Layer 4.
+- Every deep neural network consists of three types of layers, which are: Neural Networks
+
+![image](https://github.com/user-attachments/assets/8b871431-2ffb-4013-97a7-f165526cc0ec)
+
+  
+- Input Layer (Layer 1): provides the input parameters and passes parameters to further layers without any computation at this layer.
+- Hidden Layers (Layers 2 and 3): Perform the computations on the inputs receiving from the previous layers and pass on the result to the next layer. More the number of hidden layers, deeper is the network.
+- Output Layer (Layer 4): gives final output after receiving the results from the previous layers.
+
+###### Weights
+
+- This attaches some weightage to a certain feature.
+- Some features might be more important than others
+- weights calculate the weighted sum for each neuron. x1, x2, x3, x4 represent the weights associated with the corresponding connections in the deep neural network.
+
+Activation Function
+
+- decide if a neuron to activate or not depending on their weight sum.
+- hidden layer has an activation function associated with it.
+
+Backpropagation
+
+![image](https://github.com/user-attachments/assets/47c347a6-02c7-4e48-8278-1b8a4e5eedbf)
+
+
+- This is for neural net training.
+- For fine-tuning weights of a neural net based on the error rate obtained in the previous epoch (i.e., iteration).
+- Proper tuning of weights reduce error rates and make model reliable.
+- Backpropagation is a short form for “backward propagation of errors.”
+- standard method of training artificial neural networks.
+- calculate the gradient of a loss function with respects to all the weights in the network.
+- Backpropagation
+- Inputs X, arrive through the preconnected path
+- Input is modeled using real weights W, randomly selected.
+- Calculate the output for every neuron from the input layer, to the hidden layers, to the output layer.
+- Calculate the error in the outputs: ErrorB= Actual Output – Desired Output
+- Travel back from the output layer to the hidden layer to adjust the weights such that the error is decreased.
+- Keep repeating the process until the desired output is achieved
+
+
+Backpropagation Networks Types:
+
+- Static back-propagation: produces mapping of a static input for static output.
+- Recurrent Backpropagation: It is fed forward until a fixed value is achieved. After that, the error is computed and propagated backward.
+- Feature requirements for feature engineering
+- should be reasonably related
+
+##### Feature value should be known at the time of prediction without latency
+
+- Numeric with range of meaningful magnitude.
+- Difficult for categorical inputs.
+- Need to find vector/bitmask representation(1 hot encoding), for NL, we can use wordtovec.
+- Need to have enough examples of each feature value.
+- For continuous numbers, use windows.
+- Feature crosses can be done using human sights, this will simplify ml model.
+
+##### Model architecture
+
+- Linear models work well for sparse features(like employee id).
+- Neural network model works well for dense features(like price, color(rgb))
+- Regressor – linear, sparse features, specific, many features, memorization, employee id, nlp
+- DNN – non-linear, dense features, generalization, color, price
+- Wide and linear – combination of both, recommendation, search and ranking
+
+##### Hypertuning
+
+- Changing model parameters to find the right set of parameters for a particular result.
+- evaluate rmse with the parameter and keep tuning to lower rmse.
+- define what metric we want for evaluation like rmse.
+
+##### Reinforcement Machine Learning Algorithms
+
+- A type of Machine Learning where machine is required to determine the ideal behaviour within a specific context, in order to maximize its rewards.
+- It works on the rewards and punishment principle
+- for any decision which a machine takes, it will be either be rewarded for correct or punished.
+- So machine will learn to take the correct decisions to maximize the reward in the long run.
+- Can focus on long-term rewards or the short-term rewards.
+- If machine is in a specific state and has to be the action for the next state in order to achieve the reward, it is called the Markov Decision Process.
+- The environment is modelled as a stochastic finite state machine with
+- inputs (actions sent from the agent)
+- outputs (observations and rewards sent to the agent)
+- It requires clever exploration mechanisms.
+- Selection of actions with careful reference to the probability of an event
+- It is memory expensive to store the values of each state
+
+##### Important terms
+
+- Agent: It is an assumed entity which performs actions in an environment to gain some reward.
+- Environment (e): A scenario that an agent has to face.
+- Reward (R): An immediate return given to an agent when he or she performs specific action or task.
+- State (s): State refers to the current situation returned by the environment.
+- Policy (π): It is a strategy which applies by the agent to decide the next action based on the current state.
+- Value (V): It is expected long-term return with discount, as compared to the short-term reward.
+- Value Function: It specifies the value of a state that is the total amount of reward. It is an agent which should be expected beginning from that state.
+- Model of the environment: This mimics the behavior of the environment. It helps you to make inferences to be made and also determine how the environment will behave.
+- Model based methods: It is a method for solving reinforcement learning problems which use model-based methods.
+- Q value or action value (Q): Q value is quite similar to value. The only difference between the two is that it takes an additional parameter as a current action.
+
+Example:
+
+Example of cat training
+
+- cat is an agent that is exposed to the environment. In this case, it is house. An example of a state could be cat sitting, and you use a specific word in for cat to walk.
+- Our agent reacts by performing an action transition from one “state” to another “state.”
+- For example, cat goes from sitting to walking.
+- The reaction of an agent is an action, and the policy is a method of selecting an action given a state in expectation of better outcomes.
+- After the transition, they may get a reward or penalty in return.
+
+
+##### Approaches to implement a Reinforcement Learning algorithm.
+- Value-Based: try to maximize a value function V(s).
+- Policy-based: try to come up with such a policy that the action performed in every state helps you to gain maximum reward in the future.
+- Model-Based: need to create a virtual model for each environment.
 # 17. Google AI Platform (Formerly Cloud ML Engine)
+
 ### AI Platform Overview
 ### AI Platform Training
 ### AI Platform Pipelines
